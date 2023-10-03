@@ -1,6 +1,9 @@
+altair==4.0
 beautifulsoup4==4.11.2
-numpy==1.21.4
-pandas==1.4.0
+numpy
+numpyro==0.13.2
+pandas
 pendulum==2.1.2
+plotly
 streamlit==1.15.2
-typer==0.7.0
+typer

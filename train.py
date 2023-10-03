@@ -1,19 +1,25 @@
-import typer
 import pickle
 import pandas as pd
+from itertools import product
 
-from model import MarkovModel
+from marchmadpy.markov import MarkovModel
+from marchmadpy.poisson import PoissonModel
 
-def main(mens_league: bool=True):
+def train(model_cls, mens_league: bool=True):
     suffix = "xy" if mens_league else "xx"
     data_path = f"data/scores_{suffix}.csv"
-    model_path = f"model/mm{suffix}.pkl"
+    model_path = f"model/{model_cls.__name__}_{suffix}.pkl"
     
     games = pd.read_csv(data_path, parse_dates=["date"])
-    model = MarkovModel(games)
+    model = model_cls()
+    model.fit(games)
+
     with open(model_path, "wb") as f:
         pickle.dump(model, f)
 
 
-if __name__ == "__main__":
-    typer.run(main)
+for model, mens_league in product(
+    [MarkovModel, PoissonModel],
+    [True, False]
+):
+    train(model, mens_league)

@@ -1,4 +1,4 @@
-FROM python:3.8-slim
+FROM python:3.10-slim
 
 # this allows this container to be deployed in Google Cloud Run
 # remove to run container locally

@@ -2,9 +2,10 @@ import numpy as np
 import pandas as pd
 
 class MarkovModel:
-    def __init__(self, games, eps=1e-3):
+    def __init__(self, eps=1e-3):
         self.eps = eps # for markov model regularization
 
+    def prepare_data(self, games):
         self.games = games.assign(
             tie = lambda x: x["score1"] == x["score2"],
             t1win = lambda x: (x["score1"] > x["score2"]),
@@ -21,7 +22,6 @@ class MarkovModel:
         self.teams = list(set(teams))
 
         self.make_count_matrix()
-        self.fit()
     
     def make_count_matrix(self):
         print("Make count matrix.")
@@ -43,8 +43,11 @@ class MarkovModel:
 
         self.count = count
 
-    def fit(self):
+    def fit(self, games):
         print("Solve stationary distribution.")
+        
+        self.prepare_data(games)
+
         # normalize rows to 1
         self.count += 1e-3 # add eps to prevent singular matrix
         trans = self.count / self.count.sum(axis=1)
@@ -53,10 +56,10 @@ class MarkovModel:
         A.iloc[:,-1] = 1
         
         stat = np.linalg.inv(A)[-1,:]
-        self.stationary = pd.Series(stat, index=self.teams, name="rank")
+        self.ranks = pd.Series(stat, index=self.teams, name="rank")
 
     def predict(self, team1, team2, odds=True):
-        p1 = self.stationary[team1]
-        p2 = self.stationary[team2]
+        p1 = self.ranks[team1]
+        p2 = self.ranks[team2]
 
         return p1 / p2 if odds else p1 / (p1 + p2)
