@@ -5,31 +5,29 @@ import plotly.figure_factory as ff
 
 from marchmadpy.markov import MarkovModel
 from marchmadpy.poisson import PoissonModel
+from marchmadpy.bernoulli import BernoulliModel
+
 
 # load models
 models = {}
-for model_cls in [PoissonModel, MarkovModel]:
+for model_cls in [PoissonModel, MarkovModel, BernoulliModel]:
     mname = model_cls.__name__
     models[mname] = {}
-    with open(f"model/{mname}_xy.pkl", "rb") as f:
-        models[model_cls.__name__]["Men"] = pickle.load(f)
-    with open(f"model/{mname}_xx.pkl", "rb") as f:
-        models[model_cls.__name__]["Women"] = pickle.load(f)
+    with open(f"model/{mname}.pkl", "rb") as f:
+        models[model_cls.__name__] = pickle.load(f)
 
-model_type = st.selectbox("Model", ["Poisson", "Markov"])
+model_type = st.selectbox("Model", ["Bernoulli", "Poisson", "Markov"])
 
 st.title(f"Zach's {model_type} Model Madness")
 
-# select men or women
-league = st.selectbox("League", ["Men", "Women"])
-model = models[f"{model_type}Model"][league]
+model = models[f"{model_type}Model"]
 
 teams = sorted(model.teams)
 
 # select teams matchup
 st.header("Matchup Predictions")
-team1 = st.selectbox("Team 1", teams, index=teams.index("Purdue"))
-team2 = st.selectbox("Team 2", teams, index=teams.index("Alabama"))
+team1 = st.selectbox("Team 1", teams, index=teams.index("Houston"))
+team2 = st.selectbox("Team 2", teams, index=teams.index("Purdue"))
 podds = st.selectbox("Probability or Odds?", ["Probability", "Odds"], index=1)
 
 preds = model.predict(team1, team2, odds=(podds == "Odds"))
@@ -45,6 +43,8 @@ if model_type == "Poisson":
 
     fig = ff.create_distplot(hist_data, group_labels)
     st.plotly_chart(fig, use_container_width=True)
+elif model_type == "Bernoulli":
+    pred = preds["prob"]
 else:
     pred = preds
 

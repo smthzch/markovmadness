@@ -40,13 +40,11 @@ def get_games_date(date):
 
 
 def main(
-    mens_league: bool=True,
-    start_date: str="2022-11-07", 
+    start_date: str="2023-11-06", 
     end_date: str=pendulum.now().subtract(days=1).format("YYYY-MM-DD"),
     append: bool=True
 ):
-    suffix = "xy" if mens_league else "xx"
-    out_path = f"data/scores_{suffix}.csv"
+    out_path = f"data/scores.csv"
     
     # load existing game data if exists
     if append:
@@ -61,7 +59,7 @@ def main(
     # determine date range of new data to get
     start = pendulum.parse(start_date, tz="America/New_York")
     end = pendulum.parse(end_date, tz="America/New_York")
-    assert end > start
+    assert end >= start, f"{end} < {start}"
 
     period = pendulum.period(start, end)
 

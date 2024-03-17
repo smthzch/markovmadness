@@ -13,10 +13,11 @@ A dockerfile is also included in order to package the streamlit app for deployme
 This was tested with python 3.10
 
 ```shell
+mkvirtualenv marchmad
 pip install -r requirements.txt
 ```
 
-## Models
+# Models
 
 This repo contains two models
 

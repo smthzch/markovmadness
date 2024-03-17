@@ -4,11 +4,11 @@ from itertools import product
 
 from marchmadpy.markov import MarkovModel
 from marchmadpy.poisson import PoissonModel
+from marchmadpy.bernoulli import BernoulliModel
 
-def train(model_cls, mens_league: bool=True):
-    suffix = "xy" if mens_league else "xx"
-    data_path = f"data/scores_{suffix}.csv"
-    model_path = f"model/{model_cls.__name__}_{suffix}.pkl"
+def train(model_cls):
+    data_path = f"data/scores.csv"
+    model_path = f"model/{model_cls.__name__}.pkl"
     
     games = pd.read_csv(data_path, parse_dates=["date"])
     model = model_cls()
@@ -18,8 +18,5 @@ def train(model_cls, mens_league: bool=True):
         pickle.dump(model, f)
 
 
-for model, mens_league in product(
-    [MarkovModel, PoissonModel],
-    [True, False]
-):
-    train(model, mens_league)
+for model in [MarkovModel, PoissonModel, BernoulliModel]:
+    train(model)
