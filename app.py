@@ -16,7 +16,7 @@ for model_cls in [PoissonModel, MarkovModel, BernoulliModel]:
     with open(f"model/{mname}.pkl", "rb") as f:
         models[model_cls.__name__] = pickle.load(f)
 
-model_type = st.selectbox("Model", ["Bernoulli", "Poisson", "Markov"])
+model_type = "Bernoulli" # st.selectbox("Model", ["Bernoulli", "Poisson", "Markov"])
 
 st.title(f"Zach's {model_type} Model Madness")
 
@@ -26,8 +26,8 @@ teams = sorted(model.teams)
 
 # select teams matchup
 st.header("Matchup Predictions")
-team1 = st.selectbox("Team 1", teams, index=teams.index("Houston"))
-team2 = st.selectbox("Team 2", teams, index=teams.index("Purdue"))
+team1 = st.selectbox("Team 1", teams, index=teams.index("UConn"))
+team2 = st.selectbox("Team 2", teams, index=teams.index("Houston"))
 podds = st.selectbox("Probability or Odds?", ["Probability", "Odds"], index=1)
 
 preds = model.predict(team1, team2, odds=(podds == "Odds"))
