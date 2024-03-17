@@ -7,14 +7,15 @@ import numpyro.distributions as dist
 from numpyro.infer import NUTS, MCMC, Predictive
 from jax.random import PRNGKey
 
-class PoissonModel:
+class BernoulliModel:
     def __init__(self, verbose=False):
         self.verbose = verbose
         
     def prepare_games(self, games):
         games = games.assign(
             team1 = lambda x: x["team1"].str.replace("'", ""),
-            team2 = lambda x: x["team2"].str.replace("'", "")
+            team2 = lambda x: x["team2"].str.replace("'", ""),
+            t1_win = lambda x: (x["score1"] > x["score2"]) + 0.5 * (x["score1"] == x["score2"])
         )
 
         # get unique teams
@@ -27,36 +28,26 @@ class PoissonModel:
         self.n_teams = len(self.teams)
         self.t1 = np.array([self.teams.index(team) for team in games["team1"]], dtype=int)
         self.t2 = np.array([self.teams.index(team) for team in games["team2"]], dtype=int)
-        self.t1_score = games["score1"].values
-        self.t2_score = games["score2"].values
+        self.t1_win = games["t1_win"].values
         
 
     @staticmethod
-    def model(n_teams, t1, t2, t1_score=None, t2_score=None):
+    def model(n_teams, t1, t2, t1_win=None):
         # hyperpriors
-        of_sd = numpyro.sample("of_sd", dist.HalfNormal(1))
-        df_sd = numpyro.sample("df_sd", dist.HalfNormal(1))
+        sd = numpyro.sample("sd", dist.HalfNormal(1))
 
         # team level params
         with numpyro.plate("n_teams", n_teams):
-            offense = numpyro.sample("offense", dist.Normal(0, of_sd))
-            defense = numpyro.sample("defense", dist.Normal(0, df_sd))
+            power = numpyro.sample("power", dist.Normal(0, sd))
 
         # game observations
         with numpyro.plate("games", t1.shape[0]):
             numpyro.sample(
-                "t1_score", 
-                dist.Poisson(
-                    jnp.exp(offense[t1] - defense[t2])
+                "t1_win", 
+                dist.Bernoulli(
+                    logits=power[t1] - power[t2]
                 ),
-                obs=t1_score
-            )
-            numpyro.sample(
-                "t2_score", 
-                dist.Poisson(
-                    jnp.exp(offense[t2] - defense[t1])
-                ),
-                obs=t2_score
+                obs=t1_win
             )
 
     def fit(self, games, mcmc_kwargs={}):
@@ -64,16 +55,16 @@ class PoissonModel:
         self.prepare_games(games)
 
         # mcmc
-        kernel = NUTS(PoissonModel.model)
+        kernel = NUTS(BernoulliModel.model)
         self.mcmc = MCMC(kernel, num_warmup=1000, num_samples=1000)
-        self.mcmc.run(PRNGKey(0), self.n_teams, self.t1, self.t2, self.t1_score, self.t2_score)
+        self.mcmc.run(PRNGKey(0), self.n_teams, self.t1, self.t2, self.t1_win)
         if self.verbose:
             self.mcmc.print_summary()
 
         samples = self.mcmc.get_samples()
-        self.predictive = Predictive(PoissonModel.model, posterior_samples=samples)
+        self.predictive = Predictive(BernoulliModel.model, posterior_samples=samples)
 
-        ranks = np.array((samples["offense"] + samples["defense"]).mean(axis=0))
+        ranks = np.array((samples["power"]).mean(axis=0))
         self.ranks = pd.Series(ranks, index=self.teams, name="rank")
 
     def predict(self, team1, team2, odds=True, seed=1):
@@ -89,11 +80,10 @@ class PoissonModel:
             np.array([t1_ix], dtype=int), 
             np.array([t2_ix], dtype=int)
         )
-        preds["t1_score"] = np.array(preds["t1_score"]).flatten()
-        preds["t2_score"] = np.array(preds["t2_score"]).flatten()
+        preds["t1_win"] = np.array(preds["t1_win"]).flatten()
 
         # summary calculations
-        prob_t1_win = (preds["t1_score"] > preds["t2_score"]).mean().item()
+        prob_t1_win = (preds["t1_win"]).mean().item()
         preds["prob"] = prob_t1_win / (1 - prob_t1_win) if odds else prob_t1_win
 
         return preds

@@ -2,8 +2,9 @@ import numpy as np
 import pandas as pd
 
 class MarkovModel:
-    def __init__(self, eps=1e-3):
+    def __init__(self, eps=1e-3, verbose=False):
         self.eps = eps # for markov model regularization
+        self.verbose = verbose
 
     def prepare_data(self, games):
         self.games = games.assign(
@@ -24,7 +25,8 @@ class MarkovModel:
         self.make_count_matrix()
     
     def make_count_matrix(self):
-        print("Make count matrix.")
+        if self.verbose:
+            print("Make count matrix.")
         count = pd.DataFrame(0.0, index=self.teams, columns=self.teams)
         for ix, row in self.games.iterrows():
             w1 = row["t1win"] * 1
@@ -44,10 +46,9 @@ class MarkovModel:
         self.count = count
 
     def fit(self, games):
-        print("Solve stationary distribution.")
-        
         self.prepare_data(games)
-
+        if self.verbose:
+            print("Solve stationary distribution.")
         # normalize rows to 1
         self.count += 1e-3 # add eps to prevent singular matrix
         trans = self.count / self.count.sum(axis=1)
