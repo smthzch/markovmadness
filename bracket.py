@@ -1,48 +1,41 @@
 #%%
-import random
-
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import pickle
 from marchmadpy.empirical import EmpiricalModel
+from marchmadpy.markov import MarkovModel
+from marchmadpy.poisson import PoissonModel
 
-data_path = f"data/scores.csv"
-games = pd.read_csv(data_path, parse_dates=["date"])
 
-model = EmpiricalModel()
-model.fit(games, rank=False)
-
-#%%
-matchup_tree = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15]
 PROXY = True
 
 def generate_initial_matchups(teams):
     """
     Generates the first-round matchups based on seeds.
     """
+    matchup_tree = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15]
     teams = sorted(teams.items(), key=lambda x: x[1])  # Sort teams by seed
     matchups = [(teams[matchup_tree[i]-1], teams[matchup_tree[i+1]-1]) for i in range(0, len(teams), 2)]
     return matchups
 
-def simulate_game(team1, team2):
+def simulate_game(team1, team2, model):
     """
     Simulates a game between two teams, favoring the lower-seeded team.
     """
     res = model.predict(team1[0], team2[0], proxy=PROXY)
-    if res["tie"]:
+    if res.get("tie", False):
         print(f"\ttie: {team1[0]} V {team2[0]}")
-    if res["tossup"]:
+    if res.get("tossup", False):
         print(f"\ttossup: {team1[0]} V {team2[0]}")
     return team1 if res["winner"] == team1[0] else team2
 
-def play_round(matchups):
+def play_round(matchups, model):
     """
     Plays a round of the tournament and returns the winners.
     """
-    winners = [simulate_game(team1, team2) for team1, team2 in matchups]
+    winners = [simulate_game(team1, team2, model) for team1, team2 in matchups]
     return winners
 
-def generate_bracket(teams):
+def generate_bracket(teams, model):
     """
     Generates the entire bracket given initial seeds and plays through the tournament.
     """
@@ -55,7 +48,7 @@ def generate_bracket(teams):
         for game in matchups:
             print(f"{game[0][0]} (Seed {game[0][1]}) vs {game[1][0]} (Seed {game[1][1]})")
         
-        winners = play_round(matchups)
+        winners = play_round(matchups, model)
         matchups = [(winners[i], winners[i + 1]) for i in range(0, len(winners), 2)]
         bracket.append(winners)
         round_num += 1
@@ -64,11 +57,10 @@ def generate_bracket(teams):
     print(f"Final matchup:")
     game = matchups[0]
     print(f"{game[0][0]} (Seed {game[0][1]}) vs {game[1][0]} (Seed {game[1][1]})")
-    champion = play_round(matchups)[0]
+    champion = play_round(matchups, model)[0]
     print(f"Champion: {champion[0]} (Seed {champion[1]})")
     return champion
 
-# Example teams with seed numbers (1-16 for a standard NCAA tournament region)
 bracket = {
     "South": {
         1: "Auburn",
@@ -145,30 +137,44 @@ bracket = {
 }
 
 
-#%%
-# Generate and simulate the NCAA tournament bracket
-region_champs = {}
-for region in bracket:
-    print(f"Region: {region}")
-    teams = {bracket[region][i]: i for i in range(1, 17)}
-    region_champs[region] = generate_bracket(teams)[0]
-    print("")
+def main(mtype):
+    data_path = f"data/scores.csv"
+    games = pd.read_csv(data_path, parse_dates=["date"])
 
-#%%
-region_champs
-# %%
-sw_champ = model.predict(region_champs["South"], region_champs["West"], proxy=PROXY)["winner"]
-print(f"S v W winner: {sw_champ}")
+    if mtype == "empirical":
+        model = EmpiricalModel()
+        model.fit(games, rank=False)
+    elif mtype == "markov":
+        with open("model/MarkovModel.pkl", "rb") as f:
+            model = pickle.load(f)
+    elif mtype == "poisson":
+        with open("model/PoissonModel.pkl", "rb") as f:
+            model = pickle.load(f)
+    
+    # Generate and simulate the NCAA tournament bracket
+    region_champs = {}
+    for region in bracket:
+        print(f"Region: {region}")
+        teams = {bracket[region][i]: i for i in range(1, 17)}
+        region_champs[region] = generate_bracket(teams, model)[0]
+        print("")
 
-# %%
-em_champ = model.predict(region_champs["East"], region_champs["Midwest"], proxy=PROXY)["winner"]
-print(f"E v M winner: {em_champ}")
 
-# %%
-champ = model.predict(sw_champ, em_champ, proxy=PROXY)["winner"]
-print(f"Winner: {champ}")
-# %%
-model.predict(sw_champ, em_champ, proxy=PROXY)
-# %%
-model.predict("Duke", "Alabama", proxy=PROXY)
-# %%
+    print(region_champs)
+
+    sw_champ = model.predict(region_champs["South"], region_champs["West"], proxy=PROXY)["winner"]
+    print(f"S v W winner: {sw_champ}")
+
+    em_champ = model.predict(region_champs["East"], region_champs["Midwest"], proxy=PROXY)["winner"]
+    print(f"E v M winner: {em_champ}")
+
+    champ = model.predict(sw_champ, em_champ, proxy=PROXY)["winner"]
+    print(f"Winner: {champ}")
+
+
+if __name__ == "__main__":
+    for mtype in ["empirical", "markov", "poisson"]:
+        print("======================================================")
+        print(f"MODEL: {mtype}\n")
+        main(mtype)
+        print("======================================================\n")
