@@ -59,8 +59,8 @@ class MarkovModel:
         stat = np.linalg.inv(A)[-1,:]
         self.ranks = pd.Series(stat, index=self.teams, name="rank")
 
-    def predict(self, team1, team2, odds=True):
+    def predict(self, team1, team2, odds=False, **kwargs):
         p1 = self.ranks[team1]
         p2 = self.ranks[team2]
 
-        return p1 / p2 if odds else p1 / (p1 + p2)
+        return {"prob": p1 / p2 if odds else p1 / (p1 + p2), "winner": team1 if p1 / (p1 + p2) > 0.5 else team2}

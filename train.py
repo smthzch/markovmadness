@@ -4,7 +4,7 @@ from itertools import product
 
 from marchmadpy.markov import MarkovModel
 from marchmadpy.poisson import PoissonModel
-from marchmadpy.bernoulli import BernoulliModel
+from marchmadpy.empirical import EmpiricalModel
 
 def train(model_cls):
     data_path = f"data/scores.csv"
@@ -18,5 +18,5 @@ def train(model_cls):
         pickle.dump(model, f)
 
 
-for model in [MarkovModel, BernoulliModel, PoissonModel]:
+for model in [MarkovModel, EmpiricalModel, PoissonModel]:
     train(model)

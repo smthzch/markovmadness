@@ -1,9 +1,12 @@
 altair==4.0
 beautifulsoup4==4.11.2
+matplotlib
 numpy
 numpyro==0.13.2
 pandas
 pendulum==2.1.2
 plotly
+scikit-learn
+scipy
 streamlit==1.15.2
 typer

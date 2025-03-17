@@ -5,18 +5,18 @@ import plotly.figure_factory as ff
 
 from marchmadpy.markov import MarkovModel
 from marchmadpy.poisson import PoissonModel
-from marchmadpy.bernoulli import BernoulliModel
+from marchmadpy.empirical import EmpiricalModel
 
 
 # load models
 models = {}
-for model_cls in [PoissonModel, MarkovModel, BernoulliModel]:
+for model_cls in [PoissonModel, MarkovModel, EmpiricalModel]:
     mname = model_cls.__name__
     models[mname] = {}
     with open(f"model/{mname}.pkl", "rb") as f:
         models[model_cls.__name__] = pickle.load(f)
 
-model_type = "Bernoulli" # st.selectbox("Model", ["Bernoulli", "Poisson", "Markov"])
+model_type = st.selectbox("Model", ["Empirical", "Poisson", "Markov"])
 
 st.title(f"Zach's {model_type} Model Madness")
 
@@ -30,7 +30,7 @@ team1 = st.selectbox("Team 1", teams, index=teams.index("UConn"))
 team2 = st.selectbox("Team 2", teams, index=teams.index("Houston"))
 podds = st.selectbox("Probability or Odds?", ["Probability", "Odds"], index=1)
 
-preds = model.predict(team1, team2, odds=(podds == "Odds"))
+preds = model.predict(team1, team2, odds=(podds == "Odds"), proxy=False)
 
 # make score histogram if poisson model
 if model_type == "Poisson":
@@ -43,10 +43,9 @@ if model_type == "Poisson":
 
     fig = ff.create_distplot(hist_data, group_labels)
     st.plotly_chart(fig, use_container_width=True)
-elif model_type == "Bernoulli":
-    pred = preds["prob"]
 else:
-    pred = preds
+    pred = preds["prob"]
+
 
 # odds of team 1 winning
 st.text(f"{podds} of {team1} winning: {round(pred, 2)}")
