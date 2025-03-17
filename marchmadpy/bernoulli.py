@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+import jax
 import jax.numpy as jnp
 import numpyro
 import numpyro.distributions as dist
@@ -74,6 +75,7 @@ class BernoulliModel:
         t2_ix = self.teams.index(team2)
 
         # posterior predictions
+        jax.clear_caches()
         preds = self.predictive(
             PRNGKey(seed), 
             self.n_teams, 

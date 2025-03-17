@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+import jax
 import jax.numpy as jnp
 import numpyro
 import numpyro.distributions as dist
@@ -76,13 +77,14 @@ class PoissonModel:
         ranks = np.array((samples["offense"] + samples["defense"]).mean(axis=0))
         self.ranks = pd.Series(ranks, index=self.teams, name="rank")
 
-    def predict(self, team1, team2, odds=True, seed=1):
+    def predict(self, team1, team2, odds=False, seed=1, **kwargs):
         assert hasattr(self, "predictive"), "Model must be fit before predicting."
         
         t1_ix = self.teams.index(team1)
         t2_ix = self.teams.index(team2)
 
         # posterior predictions
+        jax.clear_caches()
         preds = self.predictive(
             PRNGKey(seed), 
             self.n_teams, 
@@ -95,5 +97,6 @@ class PoissonModel:
         # summary calculations
         prob_t1_win = (preds["t1_score"] > preds["t2_score"]).mean().item()
         preds["prob"] = prob_t1_win / (1 - prob_t1_win) if odds else prob_t1_win
-
+        preds["winner"] = team1 if prob_t1_win > 0.5 else team2
+        
         return preds
