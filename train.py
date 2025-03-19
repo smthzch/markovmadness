@@ -18,5 +18,5 @@ def train(model_cls):
         pickle.dump(model, f)
 
 
-for model in [MarkovModel, EmpiricalModel, PoissonModel]:
+for model in [MarkovModel, PoissonModel]:
     train(model)
