@@ -60,7 +60,7 @@ class PoissonModel:
                 obs=t2_score
             )
 
-    def fit(self, games, mcmc_kwargs={}):
+    def fit(self, games, mcmc_kwargs={}, rank=True):
         # prep data
         self.prepare_games(games)
 
@@ -79,24 +79,32 @@ class PoissonModel:
 
     def predict(self, team1, team2, odds=False, seed=1, **kwargs):
         assert hasattr(self, "predictive"), "Model must be fit before predicting."
-        
-        t1_ix = self.teams.index(team1)
-        t2_ix = self.teams.index(team2)
+        if not isinstance(team1, (list, np.ndarray)):
+            team1 = [team1]
+            team2 = [team2]
+
+        t1_ix = [self.teams.index(t1) for t1 in team1]
+        t2_ix = [self.teams.index(t2) for t2 in team2]
 
         # posterior predictions
         jax.clear_caches()
         preds = self.predictive(
             PRNGKey(seed), 
             self.n_teams, 
-            np.array([t1_ix], dtype=int), 
-            np.array([t2_ix], dtype=int)
+            np.array(t1_ix, dtype=int), 
+            np.array(t2_ix, dtype=int)
         )
-        preds["t1_score"] = np.array(preds["t1_score"]).flatten()
-        preds["t2_score"] = np.array(preds["t2_score"]).flatten()
 
-        # summary calculations
-        prob_t1_win = (preds["t1_score"] > preds["t2_score"]).mean().item()
-        preds["prob"] = prob_t1_win / (1 - prob_t1_win) if odds else prob_t1_win
-        preds["winner"] = team1 if prob_t1_win > 0.5 else team2
+        t1_score = np.array(preds["t1_score"]).T
+        t2_score = np.array(preds["t2_score"]).T
+        # use masked array to account for ties
+        mask = t1_score == t2_score
+        t1_win = np.ma.array(t1_score > t2_score, mask=mask)
+        prob_t1_win = t1_win.mean(axis=1).data
         
-        return preds
+        return {
+            "t1_score": t1_score,
+            "t2_score": t2_score,
+            "prob": prob_t1_win / (1 - prob_t1_win) if odds else prob_t1_win,
+            "winner": np.where(prob_t1_win > 0.5, team1, team2)
+        }

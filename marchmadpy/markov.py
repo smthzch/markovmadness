@@ -45,7 +45,7 @@ class MarkovModel:
 
         self.count = count
 
-    def fit(self, games):
+    def fit(self, games, rank=True):
         self.prepare_data(games)
         if self.verbose:
             print("Solve stationary distribution.")
