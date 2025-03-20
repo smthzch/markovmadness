@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 class MarkovModel:
-    def __init__(self, eps=1e-3, verbose=False):
+    def __init__(self, eps=1e-2, verbose=False):
         self.eps = eps # for markov model regularization
         self.verbose = verbose
 
@@ -50,8 +50,8 @@ class MarkovModel:
         if self.verbose:
             print("Solve stationary distribution.")
         # normalize rows to 1
-        self.count += 1e-3 # add eps to prevent singular matrix
-        trans = self.count / self.count.sum(axis=1)
+        self.count += self.eps # add eps to prevent singular matrix
+        trans = self.count / self.count.sum(axis=1).values[:,None]
         
         A = trans - np.eye(trans.shape[0])
         A.iloc[:,-1] = 1

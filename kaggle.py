@@ -32,10 +32,10 @@ def predict(gid):
     res = model.predict(t1, t2, odds=False, proxy=True)
     return res["prob"]
 
-for model_cls in [EmpiricalModel, MarkovModel]:
+for model_cls in [ MarkovModel]:
     model = model_cls()
     model.fit(raw_dat, rank=False)
-    submission["Pred"] = Parallel(10)(
+    submission["Pred"] = Parallel(-1)(
         delayed(predict)(submission.iloc[i,0]) 
         for i in tqdm(range(len(submission)))
     )
@@ -44,10 +44,11 @@ for model_cls in [EmpiricalModel, MarkovModel]:
     submission.to_csv(f"data/submission_{model.__class__.__name__}.csv", index=False)
 
 #%%
-model = PoissonModel()
-model.fit(raw_dat, rank=False)
+if False:
+    model = PoissonModel()
+    model.fit(raw_dat, rank=False)
 
-preds = model.predict(submission["ID"].str.split("_").str[1].tolist(), submission["ID"].str.split("_").str[2].tolist())
-submission["Pred"] = preds["prob"]
+    preds = model.predict(submission["ID"].str.split("_").str[1].tolist(), submission["ID"].str.split("_").str[2].tolist())
+    submission["Pred"] = preds["prob"]
 
-submission.to_csv(f"data/submission_{model.__class__.__name__}.csv", index=False)
+    submission.to_csv(f"data/submission_{model.__class__.__name__}.csv", index=False)
