@@ -3,5 +3,5 @@ eval/
 data/
 model/
 .python-version
-notes.txt
 eda.py
+*.txt

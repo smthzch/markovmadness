@@ -145,8 +145,8 @@ def main(mtype):
         model = EmpiricalModel()
         model.fit(games, rank=False)
     elif mtype == "markov":
-        with open("model/MarkovModel.pkl", "rb") as f:
-            model = pickle.load(f)
+        model = MarkovModel()
+        model.fit(games)
     elif mtype == "poisson":
         with open("model/PoissonModel.pkl", "rb") as f:
             model = pickle.load(f)
