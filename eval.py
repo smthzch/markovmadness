@@ -7,6 +7,7 @@ from marchmadpy.markov import MarkovModel
 from marchmadpy.poisson import PoissonModel
 from marchmadpy.bernoulli import BernoulliModel
 from marchmadpy.empirical import EmpiricalModel
+from marchmadpy.leastsquares import LeastSquares
 
 from sklearn.calibration import calibration_curve, CalibrationDisplay
 from sklearn.metrics import accuracy_score, log_loss, brier_score_loss
@@ -60,6 +61,6 @@ def evaluate(model_cls):
     CalibrationDisplay.from_predictions(y, p_)
     plt.savefig(f"eval/{model_cls.__name__}_calibration.png")
 
-for model in [MarkovModel, EmpiricalModel, PoissonModel]:
+for model in [LeastSquares]:
     print(f"\nEvaluating {model.__name__}")
     evaluate(model)

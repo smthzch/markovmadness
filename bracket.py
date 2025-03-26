@@ -4,6 +4,7 @@ import pickle
 from marchmadpy.empirical import EmpiricalModel
 from marchmadpy.markov import MarkovModel
 from marchmadpy.poisson import PoissonModel
+from marchmadpy.leastsquares import LeastSquares
 
 
 PROXY = True
@@ -150,6 +151,9 @@ def main(mtype):
     elif mtype == "poisson":
         with open("model/PoissonModel.pkl", "rb") as f:
             model = pickle.load(f)
+    elif mtype == "leastsquares":
+        model = LeastSquares()
+        model.fit(games)
     
     # Generate and simulate the NCAA tournament bracket
     region_champs = {}
@@ -173,7 +177,7 @@ def main(mtype):
 
 
 if __name__ == "__main__":
-    for mtype in ["empirical", "markov", "poisson"]:
+    for mtype in ["leastsquares"]:#"empirical", "markov", "poisson"]:
         print("======================================================")
         print(f"MODEL: {mtype}\n")
         main(mtype)
