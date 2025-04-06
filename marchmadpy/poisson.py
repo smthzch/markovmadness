@@ -34,28 +34,28 @@ class PoissonModel:
 
     @staticmethod
     def model(n_teams, t1, t2, t1_score=None, t2_score=None):
-        # hyperpriors
-        of_sd = numpyro.sample("of_sd", dist.HalfNormal(1))
-        df_sd = numpyro.sample("df_sd", dist.HalfNormal(1))
+        # priors
+        mu = numpyro.sample("mu", dist.Normal(0, 1))
+        sd = numpyro.sample("sd", dist.HalfNormal(1))
 
         # team level params
         with numpyro.plate("n_teams", n_teams):
-            offense = numpyro.sample("offense", dist.Normal(0, of_sd))
-            defense = numpyro.sample("defense", dist.Normal(0, df_sd))
+            offense = numpyro.sample("offense", dist.Normal(0, sd))
+            defense = numpyro.sample("defense", dist.Normal(0, sd))
 
         # game observations
         with numpyro.plate("games", t1.shape[0]):
             numpyro.sample(
                 "t1_score", 
                 dist.Poisson(
-                    jnp.exp(offense[t1] - defense[t2])
+                    jnp.exp(offense[t1] - defense[t2] + mu)
                 ),
                 obs=t1_score
             )
             numpyro.sample(
                 "t2_score", 
                 dist.Poisson(
-                    jnp.exp(offense[t2] - defense[t1])
+                    jnp.exp(offense[t2] - defense[t1] + mu)
                 ),
                 obs=t2_score
             )
@@ -66,7 +66,7 @@ class PoissonModel:
 
         # mcmc
         kernel = NUTS(PoissonModel.model)
-        self.mcmc = MCMC(kernel, num_warmup=1000, num_samples=1000)
+        self.mcmc = MCMC(kernel, num_warmup=2000, num_samples=2000)
         self.mcmc.run(PRNGKey(0), self.n_teams, self.t1, self.t2, self.t1_score, self.t2_score)
         if self.verbose:
             self.mcmc.print_summary()

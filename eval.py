@@ -26,7 +26,7 @@ def evaluate(model_cls):
     model = model_cls()
 
     dates = games.date.unique()
-    mid = 4 * int(len(dates) / 5)
+    mid = 3 * int(len(dates) / 4)
     dt = dates[mid]
     train = games.query(f"date < @pd.Timestamp('{dt}')")
     test = games.query(f"date >= @pd.Timestamp('{dt}')")
@@ -61,6 +61,6 @@ def evaluate(model_cls):
     CalibrationDisplay.from_predictions(y, p_)
     plt.savefig(f"eval/{model_cls.__name__}_calibration.png")
 
-for model in [LeastSquares]:
+for model in [LeastSquares]:#, PoissonModel]:
     print(f"\nEvaluating {model.__name__}")
     evaluate(model)

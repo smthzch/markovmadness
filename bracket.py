@@ -149,8 +149,10 @@ def main(mtype):
         model = MarkovModel()
         model.fit(games)
     elif mtype == "poisson":
-        with open("model/PoissonModel.pkl", "rb") as f:
-            model = pickle.load(f)
+        #with open("model/PoissonModel.pkl", "rb") as f:
+        #    model = pickle.load(f)
+        model = PoissonModel()
+        model.fit(games)
     elif mtype == "leastsquares":
         model = LeastSquares()
         model.fit(games)
