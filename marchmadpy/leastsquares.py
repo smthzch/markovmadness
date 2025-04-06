@@ -6,7 +6,7 @@ from joblib import Parallel, delayed
 from sklearn.model_selection import KFold
 
 class LeastSquares:
-    def __init__(self, alpha=1, link="log"):
+    def __init__(self, alpha=1e-2, link="log"):
         assert link in ["log", "linear"]
         self.alpha = alpha
         if link == "log":
