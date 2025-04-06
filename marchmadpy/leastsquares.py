@@ -1,11 +1,12 @@
 import numpy as np
 import pandas as pd
+from itertools import product
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from sklearn.model_selection import KFold
 
 class LeastSquares:
-    def __init__(self, alpha=1e-3, link="log"):
+    def __init__(self, alpha=1, link="log"):
         assert link in ["log", "linear"]
         self.alpha = alpha
         if link == "log":
@@ -47,14 +48,14 @@ class LeastSquares:
     
     @staticmethod
     def wild_bootstrap(x, y_hat, residuals, gamma):
-        weights = np.random.normal(0, 1, size=len(y_hat))
+        weights = np.random.choice([-1, 1], size=len(y_hat))
         y_star = y_hat + residuals * weights
         return LeastSquares.estimate_beta(x, y_star, gamma)
     
     @staticmethod
     def estimate_beta(x, y, gamma):
         # regularized least squares estimation
-        return (np.linalg.inv(x.T @ x + gamma.T @ gamma) @ x.T @ y)
+        return (np.linalg.inv(x.T @ x + gamma) @ x.T @ y)
 
 
     def fit(self, games, boot=False, cv=False):
@@ -69,7 +70,7 @@ class LeastSquares:
 
         if cv:
             print("CV find alpha")
-            kf = KFold(20, shuffle=True)
+            kf = KFold(5, shuffle=False)
             alphas = np.logspace(-10, 1, 12)
             losses = np.zeros_like(alphas)
             for i, alpha in tqdm(enumerate(alphas), total=len(alphas)):
@@ -121,6 +122,5 @@ class LeastSquares:
             "t2_score": s2,
             "prob": prob_t1_win / (1 - prob_t1_win) if odds else prob_t1_win,
             "winner": np.where(prob_t1_win > 0.5, team1, team2),
-            #"tie": tie
         }
     
