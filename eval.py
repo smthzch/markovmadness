@@ -61,6 +61,6 @@ def evaluate(model_cls):
     CalibrationDisplay.from_predictions(y, p_)
     plt.savefig(f"eval/{model_cls.__name__}_calibration.png")
 
-for model in [LeastSquares]:#, PoissonModel]:
+for model in [LeastSquares, PoissonModel]:
     print(f"\nEvaluating {model.__name__}")
     evaluate(model)
