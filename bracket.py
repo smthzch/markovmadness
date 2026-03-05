@@ -155,7 +155,7 @@ def main(mtype):
         model.fit(games)
     elif mtype == "leastsquares":
         model = LeastSquares()
-        model.fit(games)
+        model.fit(games, boot=True)
     
     # Generate and simulate the NCAA tournament bracket
     region_champs = {}
@@ -174,12 +174,14 @@ def main(mtype):
     em_champ = model.predict(region_champs["East"], region_champs["Midwest"], proxy=PROXY)["winner"]
     print(f"E v M winner: {em_champ}")
 
-    champ = model.predict(sw_champ, em_champ, proxy=PROXY)["winner"]
-    print(f"Winner: {champ}")
+    pred_champ = model.predict(sw_champ, em_champ, proxy=PROXY)
+    champ = pred_champ["winner"]
+    p_champ = pred_champ["prob"] if champ == sw_champ else 1 - pred_champ["prob"]
+    print(f"Winner: {champ} at {p_champ*100}%")
 
 
 if __name__ == "__main__":
-    for mtype in ["leastsquares"]:#"empirical", "markov", "poisson"]:
+    for mtype in ["poisson", "leastsquares"]:#"empirical", "markov", "poisson"]:
         print("======================================================")
         print(f"MODEL: {mtype}\n")
         main(mtype)
