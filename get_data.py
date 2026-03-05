@@ -1,6 +1,6 @@
 
 import typer
-import requests
+from playwright.sync_api import sync_playwright
 import pandas as pd
 import pendulum
 from bs4 import BeautifulSoup as bs
@@ -13,8 +13,14 @@ def get_games_date(date):
     data_date = date.format("YYYY-MM-DD")
     print(f"getting {date}")
 
-    r = requests.get(BASE_URL.format(url_date))
-    soup = bs(r.text, "html.parser")
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(BASE_URL.format(url_date))
+        html = page.content()
+        browser.close()
+
+    soup = bs(html, "html.parser")
     games = soup.find_all("ul", class_="gamePod-game-teams")
 
     games_list = []

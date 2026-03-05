@@ -15,6 +15,7 @@ This was tested with python 3.10
 ```shell
 mkvirtualenv marchmad
 pip install -r requirements.txt
+playwright install
 ```
 
 # Models
