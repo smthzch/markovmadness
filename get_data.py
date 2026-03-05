@@ -40,7 +40,7 @@ def get_games_date(date):
 
 
 def main(
-    start_date: str="2024-11-04", 
+    start_date: str="2025-11-03", 
     end_date: str=pendulum.now().subtract(days=1).format("YYYY-MM-DD"),
     append: bool=True
 ):
@@ -61,12 +61,10 @@ def main(
     end = pendulum.parse(end_date, tz="America/New_York")
     assert end >= start, f"{end} < {start}"
 
-    period = pendulum.period(start, end)
-
     # get new game data
     new_games = [
         get_games_date(dt)
-        for dt in period.range("days")
+        for dt in end.diff(start).range("days")
     ]
     new_games = [game for game in new_games if not game.empty]
     new_games = [games] + new_games if append else new_games

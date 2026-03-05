@@ -1,12 +1,12 @@
-altair==4.0
-beautifulsoup4==4.11.2
+altair
+beautifulsoup4
 matplotlib
 numpy
-numpyro==0.13.2
+numpyro
 pandas
-pendulum==2.1.2
+pendulum
 plotly
 scikit-learn
 scipy
-streamlit==1.15.2
+streamlit
 typer
