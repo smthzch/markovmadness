@@ -5,6 +5,7 @@ numpy
 numpyro
 pandas
 pendulum
+playwright
 plotly
 scikit-learn
 scipy
