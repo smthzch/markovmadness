@@ -63,77 +63,77 @@ def generate_bracket(teams, model):
     return champion
 
 bracket = {
-    "South": {
-        1: "Auburn",
-        2: "Michigan St.",
-        3: "Iowa St.",
-        4: "Texas A&M",
-        5: "Michigan",
-        6: "Ole Miss",
-        7: "Marquette",
-        8: "Louisville",
-        9: "Creighton",
-        10: "New Mexico",
-        11: "San Diego St.",
-        12: "UC San Diego",
-        13: "Yale",
-        14: "Lipscomb",
-        15: "Bryant",
-        16: "Alabama St."
-    },
     "East": {
         1: "Duke",
-        2: "Alabama",
-        3: "Wisconsin",
-        4: "Arizona",
-        5: "Oregon",
-        6: "BYU",
-        7: "Saint Marys (CA)",
-        8: "Mississippi St.",
-        9: "Baylor",
-        10: "Vanderbilt",
-        11: "VCU",
-        12: "Liberty",
-        13: "Akron",
-        14: "Montana",
-        15: "Robert Morris",
-        16: "American"
+        2: "UConn",
+        3: "Michigan St.",
+        4: "Kansas",
+        5: "St. Johns (NY)",
+        6: "Louisville",
+        7: "UCLA",
+        8: "Ohio St.",
+        9: "TCU",
+        10: "UCF",
+        11: "South Fla.",
+        12: "UNI",
+        13: "California Baptist",
+        14: "North Dakota St.",
+        15: "Furman",
+        16: "Siena"
     },
     "Midwest": {
-        1: "Houston",
-        2: "Tennessee",
-        3: "Kentucky",
-        4: "Purdue",
-        5: "Clemson",
-        6: "Illinois",
-        7: "UCLA",
-        8: "Gonzaga",
-        9: "Georgia",
-        10: "Utah St.",
-        11: "Texas",
+        1: "Michigan",
+        2: "Iowa St.",
+        3: "Virginia",
+        4: "Alabama",
+        5: "Texas Tech",
+        6: "Tennessee",
+        7: "Kentucky",
+        8: "Georgia",
+        9: "Saint Louis",
+        10: "Santa Clara",
+        11: "Miami (OH)", # or SMU
+        12: "Akron",
+        13: "Hofstra",
+        14: "Wright St.",
+        15: "Tennessee St.",
+        16: "UMBC" # or  Howard
+    },
+    "South": {
+        1: "Florida",
+        2: "Houston",
+        3: "Illinois",
+        4: "Nebraska",
+        5: "Vanderbilt",
+        6: "North Carolina",
+        7: "Saint Marys (CA)",
+        8: "Clemson",
+        9: "Iowa",
+        10: "Texas A&M",
+        11: "VCU",
         12: "McNeese",
-        13: "High Point",
-        14: "Troy",
-        15: "Wofford",
-        16: "SIUE"
+        13: "Troy",
+        14: "Penn",
+        15: "Idaho",
+        16: "Lehigh" # or Prairie View
     },
     "West": {
-        1: "Florida",
-        2: "St. Johns (NY)",
-        3: "Texas Tech",
-        4: "Maryland",
-        5: "Memphis",
-        6: "Missouri",
-        7: "Kansas",
-        8: "UConn",
-        9: "Oklahoma",
-        10: "Arkansas",
-        11: "Drake",
-        12: "Colorado St.",
-        13: "Grand Canyon",
-        14: "UNCW",
-        15: "Omaha",
-        16: "Norfolk St."
+        1: "Arizona",
+        2: "Purdue",
+        3: "Gonzaga",
+        4: "Arkansas",
+        5: "Wisconsin",
+        6: "BYU",
+        7: "Miami (FL)",
+        8: "Villanova",
+        9: "Utah St.",
+        10: "Missouri",
+        11: "NC State", # or Texas
+        12: "High Point",
+        13: "Hawaii",
+        14: "Kennesaw St.",
+        15: "Queens (NC)",
+        16: "LIU"
     }
 }
 
@@ -177,11 +177,12 @@ def main(mtype):
     pred_champ = model.predict(sw_champ, em_champ, proxy=PROXY)
     champ = pred_champ["winner"]
     p_champ = pred_champ["prob"] if champ == sw_champ else 1 - pred_champ["prob"]
-    print(f"Winner: {champ} at {p_champ*100}%")
+    comb_score = (pred_champ["t1_score"] + pred_champ["t2_score"]).mean()
+    print(f"Winner: {champ} at {p_champ*100}%, combined score: {comb_score}")
 
 
 if __name__ == "__main__":
-    for mtype in ["poisson", "leastsquares"]:#"empirical", "markov", "poisson"]:
+    for mtype in ["poisson"]:# "leastsquares", "empirical", "markov", "poisson"]:
         print("======================================================")
         print(f"MODEL: {mtype}\n")
         main(mtype)
