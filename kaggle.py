@@ -3,18 +3,19 @@ import pandas as pd
 from tqdm import tqdm
 from joblib import Parallel, delayed
 
-from marchmadpy.empirical import EmpiricalModel
-from marchmadpy.markov import MarkovModel
+from marchmadpy.leastsquares import LeastSquares
 from marchmadpy.poisson import PoissonModel
 
 # %%
-raw_dat = pd.read_csv("data/kaggle_m.csv").query("Season == 2025")
+year = 2026
+
+raw_dat = pd.read_csv("data/kaggle_m.csv").query(f"Season == {year}")
 raw_dat["team1"] = list(map(str, raw_dat["WTeamID"]))
 raw_dat["team2"] = list(map(str, raw_dat["LTeamID"]))
 raw_dat["score1"] = raw_dat["WScore"]
 raw_dat["score2"] = raw_dat["LScore"]
 
-raw_dat1 = pd.read_csv("data/kaggle_w.csv").query("Season == 2025")
+raw_dat1 = pd.read_csv("data/kaggle_w.csv").query(f"Season == {year}")
 raw_dat1["team1"] = list(map(str, raw_dat1["WTeamID"]))
 raw_dat1["team2"] = list(map(str, raw_dat1["LTeamID"]))
 raw_dat1["score1"] = raw_dat1["WScore"]
@@ -29,12 +30,12 @@ assert (submission["ID"].str.split("_").str[1] < submission["ID"].str.split("_")
 # %%
 def predict(gid):
     _, t1, t2 = gid.split("_")
-    res = model.predict(t1, t2, odds=False, proxy=True)
-    return res["prob"]
+    res = model.predict(t1, t2, odds=False)
+    return res["prob"][0]
 
-for model_cls in [ MarkovModel]:
+for model_cls in [LeastSquares]:
     model = model_cls()
-    model.fit(raw_dat, rank=False)
+    model.fit(raw_dat)
     submission["Pred"] = Parallel(-1)(
         delayed(predict)(submission.iloc[i,0]) 
         for i in tqdm(range(len(submission)))
@@ -44,7 +45,7 @@ for model_cls in [ MarkovModel]:
     submission.to_csv(f"data/submission_{model.__class__.__name__}.csv", index=False)
 
 #%%
-if False:
+if True:
     model = PoissonModel()
     model.fit(raw_dat, rank=False)
 
