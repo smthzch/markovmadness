@@ -68,7 +68,7 @@ class BernoulliModel:
         ranks = np.array((samples["power"]).mean(axis=0))
         self.ranks = pd.Series(ranks, index=self.teams, name="rank")
 
-    def predict(self, team1, team2, odds=True, seed=1):
+    def predict(self, team1, team2, odds=True, seed=1, **kwargs):
         assert hasattr(self, "predictive"), "Model must be fit before predicting."
         
         t1_ix = self.teams.index(team1)

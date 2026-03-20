@@ -47,8 +47,9 @@ class LeastSquares:
         return x1, x2
     
     @staticmethod
-    def weight(n):
-        return np.random.choice([-1, 1], size=n)
+    def weight(n, s):
+        rng = np.random.default_rng(s)
+        return rng.choice([-1, 1], size=n)
     
     @staticmethod
     def estimate_beta(x, y, gamma):
@@ -56,8 +57,8 @@ class LeastSquares:
         return (np.linalg.inv(x.T @ x + gamma) @ x.T @ y)
 
     @staticmethod
-    def wild_bootstrap(x, y_hat, residuals, gamma):
-        weights = LeastSquares.weight(len(y_hat))
+    def wild_bootstrap(x, y_hat, residuals, gamma, s):
+        weights = LeastSquares.weight(len(y_hat), s)
         y_star = y_hat + residuals * weights
         return LeastSquares.estimate_beta(x, y_star, gamma)
     
@@ -95,7 +96,10 @@ class LeastSquares:
             n_boot = 1000
             y_hat = x @ full_beta
             self.residuals = y - y_hat
-            res = Parallel(n_jobs=20)(delayed(LeastSquares.wild_bootstrap)(x, y_hat, self.residuals, gamma) for _ in tqdm(range(n_boot)))
+            # generate seeds
+            ss = np.random.SeedSequence(12345)
+            child_seeds = ss.spawn(n_boot)
+            res = Parallel(n_jobs=10)(delayed(LeastSquares.wild_bootstrap)(x, y_hat, self.residuals, gamma, s) for s in tqdm(child_seeds))
             self.betas = np.stack(res, axis=0)
         else:
             self.betas = full_beta[None,:]
@@ -113,7 +117,7 @@ class LeastSquares:
         if self.boot:
             # add wild bootstrap predictive uncertainty
             new_res = np.random.choice(self.residuals, 2 * s1.shape[0] * s1.shape[1], replace=True)
-            new_res *= LeastSquares.weight(2 * s1.shape[0] * s1.shape[1])
+            new_res *= LeastSquares.weight(2 * s1.shape[0] * s1.shape[1], 1)
             new_res = new_res.reshape((2, s1.shape[0], s1.shape[1]))
             s1 = self.inv_link(s1 + new_res[0])
             s2 = self.inv_link(s2 + new_res[1])

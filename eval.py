@@ -57,8 +57,13 @@ def evaluate(model_cls):
     print(f"-Log Loss: {log_loss(y, p_)}")
     print(f"Brier score: {brier_score_loss(y, p_)}")
 
-    plt.clf()
-    CalibrationDisplay.from_predictions(y, p_)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 10), gridspec_kw={"height_ratios": [2, 1]})
+    CalibrationDisplay.from_predictions(y, p_, ax=ax1)
+    ax2.hist(p_, bins=20, range=(0, 1), edgecolor="black")
+    ax2.set_xlabel("Predicted probability")
+    ax2.set_ylabel("Count")
+    ax2.set_title("Prediction distribution")
+    plt.tight_layout()
     plt.savefig(f"eval/{model_cls.__name__}_calibration.png")
 
 for model in [LeastSquares, PoissonModel]:
