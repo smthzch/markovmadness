@@ -3,7 +3,7 @@ import pandas as pd
 import pickle
 from marchmadpy.empirical import EmpiricalModel
 from marchmadpy.markov import MarkovModel
-from marchmadpy.poisson import PoissonModel
+from marchmadpy.poisson import SuperPoissonModel
 from marchmadpy.leastsquares import LeastSquares
 
 
@@ -151,7 +151,7 @@ def main(mtype):
     elif mtype == "poisson":
         #with open("model/PoissonModel.pkl", "rb") as f:
         #    model = pickle.load(f)
-        model = PoissonModel()
+        model = SuperPoissonModel()
         model.fit(games)
     elif mtype == "leastsquares":
         model = LeastSquares()

@@ -46,7 +46,7 @@ def get_games_date(date):
 
 
 def main(
-    start_date: str="2025-11-03", 
+    start_date: str="2022-11-03", 
     end_date: str=pendulum.now().subtract(days=1).format("YYYY-MM-DD"),
     append: bool=True
 ):

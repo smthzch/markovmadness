@@ -18,10 +18,7 @@ class LeastSquares:
         assert 1.0 == self.inv_link(self.link(1.0))
 
     def prepare_games(self, games):
-        self.dat = games.assign(
-            team1 = games["team1"].str.replace("'", ""),
-            team2 = games["team2"].str.replace("'", "")
-        )
+        self.dat = games
 
         teams = pd.concat([self.dat.team1, self.dat.team2]).unique()
         self.teams = list(teams)
@@ -62,7 +59,7 @@ class LeastSquares:
         y_star = y_hat + residuals * weights
         return LeastSquares.estimate_beta(x, y_star, gamma)
     
-    def fit(self, games, boot=True, cv=False):
+    def fit(self, games, boot=True, cv=False, **kwargs):
         self.boot = boot
         self.prepare_games(games)
 
