@@ -15,6 +15,7 @@ class PoissonModel:
         self.verbose = verbose
         
     def prepare_games(self, games):
+        games = games.query(f"season_year == {games['season_year'].max()}")
         # get unique teams
         team1 = set(games.team1)
         team2 = set(games.team2)

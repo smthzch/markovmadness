@@ -18,7 +18,7 @@ class LeastSquares:
         assert 1.0 == self.inv_link(self.link(1.0))
 
     def prepare_games(self, games):
-        self.dat = games
+        self.dat = games.query(f"season_year == {games['season_year'].max()}")
 
         teams = pd.concat([self.dat.team1, self.dat.team2]).unique()
         self.teams = list(teams)

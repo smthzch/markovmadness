@@ -1,8 +1,3 @@
-import pickle
-import numpy as np
-import pandas as pd
-from itertools import product
-
 from marchmadpy.data import load_games
 from marchmadpy.markov import MarkovModel
 from marchmadpy.poisson import PoissonModel, SuperPoissonModel
@@ -10,15 +5,15 @@ from marchmadpy.bernoulli import BernoulliModel
 from marchmadpy.empirical import EmpiricalModel
 from marchmadpy.leastsquares import LeastSquares
 
-from sklearn.calibration import calibration_curve, CalibrationDisplay
+from sklearn.calibration import CalibrationDisplay
 from sklearn.metrics import accuracy_score, log_loss, brier_score_loss
+import pandas as pd
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 
 def evaluate(model_cls):
     # load data
     data_path = f"data/scores.csv"
-    games = load_games(data_path)
+    games = load_games(data_path, latest_only=model.__name__ != "SuperPoissonModel")
     # train/test temporal split
     dates = games.date.unique()
     mid = 7 * int(len(dates) / 8)

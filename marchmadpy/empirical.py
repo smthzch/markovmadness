@@ -8,11 +8,6 @@ class EmpiricalModel:
         self.verbose = verbose
 
     def prepare_games(self, games):
-        games = games.assign(
-            team1 = games["team1"].str.replace("'", ""),
-            team2 = games["team2"].str.replace("'", "")
-        )
-
         teams = pd.concat([games["team1"], games["team2"]]).unique()
         self.teams = list(teams)
         self.n_teams = len(self.teams)
@@ -42,7 +37,7 @@ class EmpiricalModel:
         proxy["t"] = proxy["t_"]
         return proxy.drop(columns=["d_x", "d_y", "t_"])
 
-    def fit(self, games, rank=False):
+    def fit(self, games, rank=False, **kwargs):
         self.prepare_games(games)
 
         if rank:
@@ -57,50 +52,56 @@ class EmpiricalModel:
         winner = self.predict(self.teams[i], self.teams[j])["winner"]
         return 1 if winner == self.teams[i] else -1
 
-    def predict(self, team1, team2, odds=False, proxy=True):
-        t1i = self.teams.index(team1)
-        t2i = self.teams.index(team2)
+    def predict(self, teams1, teams2, odds=False, proxy=True, **kwargs):
+        if not isinstance(teams1, (list, np.ndarray)):
+            teams1 = [teams1]
+            teams2 = [teams2]
+        res = []
+        for team1, team2 in tqdm(zip(teams1, teams2), total=len(teams1)):
+            t1i = self.teams.index(team1)
+            t2i = self.teams.index(team2)
 
-        t1dat = self.extract_t_games(t1i)
-        t2dat = self.extract_t_games(t2i)
+            t1dat = self.extract_t_games(t1i)
+            t2dat = self.extract_t_games(t2i)
 
-        ddat = t1dat.merge(t2dat, how="outer", on="t")
-        ddat["d"] = ddat["d_x"] - ddat["d_y"]
-        if proxy:
-            t1_null = ddat[ddat["d_x"].isnull()].reset_index()
-            proxy_t1s = [self.proxy_matchup(t1dat, ti_null) for ti_null in t1_null["t"].unique()]
-            if len(proxy_t1s) > 0:
-                proxy_t1s = pd.concat(proxy_t1s, ignore_index=True)
+            ddat = t1dat.merge(t2dat, how="outer", on="t")
+            ddat["d"] = ddat["d_x"] - ddat["d_y"]
+            if proxy:
+                t1_null = ddat[ddat["d_x"].isnull()].reset_index()
+                proxy_t1s = [self.proxy_matchup(t1dat, ti_null) for ti_null in t1_null["t"].unique()]
+                if len(proxy_t1s) > 0:
+                    proxy_t1s = pd.concat(proxy_t1s, ignore_index=True)
 
-            t2_null = ddat[ddat["d_y"].isnull()].reset_index()
-            proxy_t2s = [self.proxy_matchup(t2dat, ti_null) for ti_null in t2_null["t"].unique()]
-            if len(proxy_t2s) > 0:
-                proxy_t2s = pd.concat(proxy_t2s, ignore_index=True)
+                t2_null = ddat[ddat["d_y"].isnull()].reset_index()
+                proxy_t2s = [self.proxy_matchup(t2dat, ti_null) for ti_null in t2_null["t"].unique()]
+                if len(proxy_t2s) > 0:
+                    proxy_t2s = pd.concat(proxy_t2s, ignore_index=True)
 
-            if len(proxy_t1s) > 0:
-                t1dat = pd.concat([t1dat, proxy_t1s], ignore_index=True).groupby("t").mean().reset_index(drop=False)
-            if len(proxy_t2s) > 0:
-                t2dat = pd.concat([t2dat, proxy_t2s], ignore_index=True).groupby("t").mean().reset_index(drop=False)
+                if len(proxy_t1s) > 0:
+                    t1dat = pd.concat([t1dat, proxy_t1s], ignore_index=True).groupby("t").mean().reset_index(drop=False)
+                if len(proxy_t2s) > 0:
+                    t2dat = pd.concat([t2dat, proxy_t2s], ignore_index=True).groupby("t").mean().reset_index(drop=False)
 
-        ddat = t1dat.merge(t2dat, how="inner", on="t")
-        ddat["d"] = ddat["d_x"] - ddat["d_y"]
-        tie, tossup = False, False
-        if len(ddat) == 0:
-            p1_win = 0.5
-            tossup = True
-        else:
-            p1_win = (ddat.query("d != 0")["d"] > 0).mean()
-            alpha = 0.1
-            p1_win = (1 - alpha) * p1_win + alpha * 0.5
-        if p1_win == 0.5:
-            tie = True
-            p1_win = 0.75 if ddat["d"].mean() > 0 else 0.25
-
-        return {
-            "winner": team1 if p1_win > 0.5 else team2,
-            "prob": p1_win if not odds else p1_win / (1 - p1_win),
-            "over_under": ddat["d"].mean(),
-            "n": len(ddat),
-            "tie": tie,
-            "tossup": tossup
-        }
+            ddat = t1dat.merge(t2dat, how="inner", on="t")
+            ddat["d"] = ddat["d_x"] - ddat["d_y"]
+            tie, tossup = False, False
+            if len(ddat) == 0:
+                p1_win = 0.5
+                tossup = True
+            else:
+                p1_win = (ddat.query("d != 0")["d"] > 0).mean()
+                alpha = 0.1
+                p1_win = (1 - alpha) * p1_win + alpha * 0.5
+            if p1_win == 0.5:
+                tie = True
+                p1_win = 0.75 if ddat["d"].mean() > 0 else 0.25
+            res += [{
+                "winner": team1 if p1_win > 0.5 else team2,
+                "prob": p1_win if not odds else p1_win / (1 - p1_win),
+                "over_under": ddat["d"].mean(),
+                "n": len(ddat),
+                "tie": tie,
+                "tossup": tossup,
+            }]
+        res = pd.DataFrame(res)
+        return {col: res[col].to_numpy() for col in res.columns}
