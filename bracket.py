@@ -1,11 +1,12 @@
 #%%
 import pandas as pd
-import pickle
+from marchmadpy.bernoulli import BernoulliModel
 from marchmadpy.empirical import EmpiricalModel
 from marchmadpy.markov import MarkovModel
-from marchmadpy.poisson import SuperPoissonModel
+from marchmadpy.poisson import PoissonModel
 from marchmadpy.leastsquares import LeastSquares
 
+from marchmadpy.data import load_games
 
 PROXY = True
 
@@ -140,22 +141,23 @@ bracket = {
 
 def main(mtype):
     data_path = f"data/scores.csv"
-    games = pd.read_csv(data_path, parse_dates=["date"])
+    games = load_games(data_path, latest_only=True)
 
     if mtype == "empirical":
         model = EmpiricalModel()
         model.fit(games, rank=False)
+    elif mtype == "bernoulli":
+        model = BernoulliModel()
+        model.fit(games)
     elif mtype == "markov":
         model = MarkovModel()
         model.fit(games)
     elif mtype == "poisson":
-        #with open("model/PoissonModel.pkl", "rb") as f:
-        #    model = pickle.load(f)
-        model = SuperPoissonModel()
+        model = PoissonModel()
         model.fit(games)
     elif mtype == "leastsquares":
         model = LeastSquares()
-        model.fit(games, boot=True)
+        model.fit(games, boot=False, cv=True)
     
     # Generate and simulate the NCAA tournament bracket
     region_champs = {}
@@ -168,21 +170,21 @@ def main(mtype):
 
     print(region_champs)
 
-    sw_champ = model.predict(region_champs["South"], region_champs["West"], proxy=PROXY)["winner"]
-    print(f"S v W winner: {sw_champ}")
+    se_champ = model.predict(region_champs["South"], region_champs["East"], proxy=PROXY)["winner"]
+    print(f"S v E winner: {se_champ}")
 
-    em_champ = model.predict(region_champs["East"], region_champs["Midwest"], proxy=PROXY)["winner"]
-    print(f"E v M winner: {em_champ}")
+    wm_champ = model.predict(region_champs["West"], region_champs["Midwest"], proxy=PROXY)["winner"]
+    print(f"W v M winner: {wm_champ}")
 
-    pred_champ = model.predict(sw_champ, em_champ, proxy=PROXY)
+    pred_champ = model.predict(se_champ, wm_champ, proxy=PROXY)
     champ = pred_champ["winner"]
-    p_champ = pred_champ["prob"] if champ == sw_champ else 1 - pred_champ["prob"]
+    p_champ = pred_champ["prob"] if champ == se_champ else 1 - pred_champ["prob"]
     comb_score = (pred_champ["t1_score"] + pred_champ["t2_score"]).mean()
     print(f"Winner: {champ} at {p_champ*100}%, combined score: {comb_score}")
 
 
 if __name__ == "__main__":
-    for mtype in ["poisson"]:# "leastsquares", "empirical", "markov", "poisson"]:
+    for mtype in ["leastsquares"]:# ["markov", "bernoulli", "empirical", "leastsquares", "poisson"]:
         print("======================================================")
         print(f"MODEL: {mtype}\n")
         main(mtype)

@@ -7,16 +7,17 @@ from marchmadpy.leastsquares import LeastSquares
 
 from sklearn.calibration import CalibrationDisplay
 from sklearn.metrics import accuracy_score, log_loss, brier_score_loss
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 def evaluate(model_cls):
     # load data
     data_path = f"data/scores.csv"
-    games = load_games(data_path, latest_only=model.__name__ != "SuperPoissonModel")
+    games = load_games(data_path, latest_only=model_cls.__name__ != "SuperPoissonModel")
     # train/test temporal split
     dates = games.date.unique()
-    mid = 7 * int(len(dates) / 8)
+    mid = 3 * int(len(dates) / 4)
     dt = dates[mid]
     train = games.query(f"date < @pd.Timestamp('{dt}')")
     test = games.query(f"date >= @pd.Timestamp('{dt}')")
@@ -28,8 +29,14 @@ def evaluate(model_cls):
     # drop test where test team not in train
     test = test.query(f"team1 in {model.teams} and team2 in {model.teams}")
 
-    prob = model.predict(test.team1.values, test.team2.values, odds=False, proxy=True)
-    y = test.t1win.values
+    rng = np.random.default_rng(1)
+    test_flip = rng.binomial(1, 0.5, len(test.team1)).astype(bool)
+    test_1 = np.where(test_flip, test.team1.values, test.team2.values)
+    test_2 = np.where(test_flip, test.team2.values, test.team1.values)
+    test_win =  np.where(test_flip, test.t1win.values, test.t2win.values)
+
+    prob = model.predict(test_1, test_2, odds=False, proxy=False)
+    y = test_win
     p_ = prob["prob"]
     y_ = 1 * (p_ > 0.5)
 
@@ -46,6 +53,6 @@ def evaluate(model_cls):
     plt.tight_layout()
     plt.savefig(f"eval/{model_cls.__name__}_calibration.png")
 
-for model in [LeastSquares, PoissonModel, SuperPoissonModel]:
+for model in [LeastSquares]:
     print(f"\nEvaluating {model.__name__}")
     evaluate(model)

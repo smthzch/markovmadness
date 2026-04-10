@@ -4,6 +4,7 @@ from itertools import product
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from sklearn.model_selection import KFold
+from scipy.stats import skellam
 
 class LeastSquares:
     def __init__(self, alpha=1e-2, link="log"):
@@ -18,7 +19,7 @@ class LeastSquares:
         assert 1.0 == self.inv_link(self.link(1.0))
 
     def prepare_games(self, games):
-        self.dat = games.query(f"season_year == {games['season_year'].max()}")
+        self.dat = games
 
         teams = pd.concat([self.dat.team1, self.dat.team2]).unique()
         self.teams = list(teams)
@@ -59,7 +60,7 @@ class LeastSquares:
         y_star = y_hat + residuals * weights
         return LeastSquares.estimate_beta(x, y_star, gamma)
     
-    def fit(self, games, boot=True, cv=False, **kwargs):
+    def fit(self, games, boot=False, cv=False, **kwargs):
         self.boot = boot
         self.prepare_games(games)
 
@@ -123,12 +124,10 @@ class LeastSquares:
             t1_win = np.ma.array(s1 > s2, mask=mask)
             prob_t1_win = t1_win.mean(axis=1).data
         else:
-            # dummy probabilities if not boot
             s1 = self.inv_link(s1)
             s2 = self.inv_link(s2)
-            tie = s1[:,0] == s2[:,0]
             t1_win = s1[:,0] > s2[:,0]
-            prob_t1_win = np.where(tie, 0.5, np.where(t1_win, 2/3, 1/3))
+            prob_t1_win = skellam.sf(0, s1[:,0], s2[:,0]) + skellam.pmf(0, s1[:,0], s2[:,0]) / 2
         
         return {
             "t1_score": s1,

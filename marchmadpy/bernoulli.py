@@ -68,24 +68,30 @@ class BernoulliModel:
         ranks = np.array((samples["power"]).mean(axis=0))
         self.ranks = pd.Series(ranks, index=self.teams, name="rank")
 
-    def predict(self, team1, team2, odds=True, seed=1, **kwargs):
+    def predict(self, team1, team2, odds=False, seed=1, **kwargs):
         assert hasattr(self, "predictive"), "Model must be fit before predicting."
         
-        t1_ix = self.teams.index(team1)
-        t2_ix = self.teams.index(team2)
+        if not isinstance(team1, (list, np.ndarray)):
+            team1 = [team1]
+            team2 = [team2]
+
+        t1_ix = [self.teams.index(t1) for t1 in team1]
+        t2_ix = [self.teams.index(t2) for t2 in team2]
 
         # posterior predictions
         jax.clear_caches()
         preds = self.predictive(
             PRNGKey(seed), 
             self.n_teams, 
-            np.array([t1_ix], dtype=int), 
-            np.array([t2_ix], dtype=int)
+            np.array(t1_ix, dtype=int), 
+            np.array(t2_ix, dtype=int)
         )
-        preds["t1_win"] = np.array(preds["t1_win"]).flatten()
+        t1_win = np.array(preds["t1_win"]).T
 
         # summary calculations
-        prob_t1_win = (preds["t1_win"]).mean().item()
-        preds["prob"] = prob_t1_win / (1 - prob_t1_win) if odds else prob_t1_win
+        prob_t1_win = t1_win.mean(axis=1)
 
-        return preds
+        return {
+            "prob": prob_t1_win / (1 - prob_t1_win) if odds else prob_t1_win,
+            "winner": np.where(prob_t1_win > 0.5, team1, team2)
+        }
